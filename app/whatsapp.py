@@ -647,11 +647,13 @@ def _handle_select_time(session, inp, ctx, patient):
             session.state = STATE_CONFIRM
             db.session.commit()
 
+            # Re-read context after update_context() to get the fresh value
+            ctx = session.get_context()
             doctor = Doctor.query.get(ctx.get("selected_doctor_id"))
             apt_date = date.fromisoformat(ctx.get("selected_date"))
             apt_time = dtime.fromisoformat(ctx.get("selected_time"))
             return _msg_confirm(doctor, apt_date, apt_time, patient)
-    except (ValueError, IndexError):
+    except (ValueError, IndexError, TypeError):
         pass
 
     return (
@@ -664,8 +666,15 @@ def _handle_confirm(session, inp, ctx, patient):
     """User confirms or cancels the booking."""
     if inp in ("yes", "y", "confirm", "ok", "1"):
         doctor = Doctor.query.get(ctx.get("selected_doctor_id"))
-        apt_date = date.fromisoformat(ctx.get("selected_date"))
-        apt_time = dtime.fromisoformat(ctx.get("selected_time"))
+        selected_date = ctx.get("selected_date")
+        selected_time = ctx.get("selected_time")
+        if not selected_date or not selected_time:
+            session.clear_context()
+            session.state = STATE_MENU
+            db.session.commit()
+            return "⚠️ _Session expired. Starting over._\n\n" + _msg_welcome()
+        apt_date = date.fromisoformat(selected_date)
+        apt_time = dtime.fromisoformat(selected_time)
 
         appointment = Appointment(
             patient_id=patient.id,
