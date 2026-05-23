@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_API_KEY_SID=${TWILIO_API_KEY_SID}
+      - TWILIO_API_KEY_SECRET=${TWILIO_API_KEY_SECRET}
+      - TWILIO_WHATSAPP_NUMBER=${TWILIO_WHATSAPP_NUMBER:-whatsapp:+14155238886}
+      - SECRET_KEY=${SECRET_KEY:-dev-key-change-in-prod}
+      - BASE_URL=${BASE_URL:-http://localhost:5000}
+      - DATABASE_URL=sqlite:///doctorbot.db
+      - FOLLOWUP_DELAY_HOURS=${FOLLOWUP_DELAY_HOURS:-24}
+    volumes:
+      - ./instance:/app/instance
+    restart: unless-stopped
